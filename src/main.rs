@@ -3,17 +3,19 @@ mod neural_network;
 
 fn main(){
     use crate::engine::engine::Value;
-    
-    print!("We coded micrograd");
-    let some_value = Value::new(1.0);
-    let some_value2 = Value::new(-2.0);
+    let val1 = Value::new(0.0); //0.0
+    let val2 = Value::new(3.0); //3.0
+    let val3 = Value::from(15); //15.0
 
-    let some_value3 = Value::new(10.0);
-    let some_value4 = Value::new(1.0/10.0);
+    let val4 = val1.clone() + val2.clone(); //3.0
+    let val5 = val2.clone() * val3.clone(); //45.0
 
-    print!("{:?}", some_value.clone() + some_value2.clone());
-    print!("{:?}", some_value3.clone() * some_value4 + some_value);
-    print!("{:?}", some_value3.tanh());
+    let val6 = Value::from(10) * val4.clone(); //30.0
+
+    let mut val7 = val5.clone() + val6.clone();
+
+    println!("{:?}", val7.clone());
+    println!();
+    val7.backwards();
+    println!("{:?}", val7);
 }
-
-
