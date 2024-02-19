@@ -1,7 +1,7 @@
 pub mod engine {
     use std::cell::RefCell;
     use std::rc::Rc;
-    use core::ops::{Add, Mul};
+    use core::ops::{Add, Sub, Mul, Div};
     use std::collections::{VecDeque, HashSet};
     use std::sync::atomic::{AtomicUsize, Ordering};
     
@@ -23,8 +23,15 @@ pub mod engine {
     pub enum Operation {
         Addition(Value, Value),
         Multiplication(Value, Value),
+        Power(Value, Exponent),
         Tanh(Value),
+        Exp(Value),
         Base
+    }
+
+    #[derive (Clone, Debug)]
+    pub struct Exponent{
+        value : f64
     }
 
     impl Eq for Value{}
@@ -81,7 +88,10 @@ pub mod engine {
                         Self::yield_topographic_ordering(left_child, seen_values, current_ordering);
                         Self::yield_topographic_ordering(right_child, seen_values, current_ordering);
                     },
-                    Operation::Tanh(child) => Self::yield_topographic_ordering(child, seen_values, current_ordering),
+                    Operation::Power(child, _) => {
+                        Self::yield_topographic_ordering(child, seen_values, current_ordering);
+                    }
+                    Operation::Tanh(child) | Operation::Exp(child) => Self::yield_topographic_ordering(child, seen_values, current_ordering),
                     Operation::Base => {}
                 }
                 current_ordering.push_back(node.clone());              
@@ -109,6 +119,14 @@ pub mod engine {
                     //if c = a*b, dc/da = 1.0*b and dc/db = a*1.0
                     left.gradient += right.value * self.reference.borrow().gradient;
                     right.gradient += left.value * self.reference.borrow().gradient;
+                },
+                Operation::Power(child, exponent) => {
+                    let mut child = child.reference.borrow_mut();
+                    child.gradient += (exponent.value)*f64::powf(child.value, (exponent.value)-1.0);
+                }
+                Operation::Exp(child) => {
+                    let mut child = child.reference.borrow_mut();
+                    child.gradient += child.value * self.reference.borrow().gradient;
                 },
                 Operation::Tanh(child) => {
                     let mut child = child.reference.borrow_mut();
@@ -138,6 +156,18 @@ pub mod engine {
             
     }
     // Value Operations
+    pub trait Exp{
+        type Output;
+
+        fn exp(self) -> Self::Output;
+    }
+
+    pub trait Power{
+        type Output;
+
+        fn power(self, other: Exponent) -> Self::Output;
+    }
+
     impl From<f64> for Value{
         fn from(value: f64) -> Value{
             Value::new(value)
@@ -160,6 +190,19 @@ pub mod engine {
             }
         }
     }
+
+    impl From<f64> for Exponent{
+        fn from(value: f64) -> Exponent{
+            Exponent { value}
+        }
+    }
+
+    impl From<i32> for Exponent{
+        fn from(value: i32) -> Exponent{
+            Exponent { value: f64::from(value)}
+        }
+    }
+
     // Add Gauntlet
     impl Add for Value{
         type Output = Value;
@@ -192,4 +235,67 @@ pub mod engine {
             }))}
         }
     }
+    impl Sub for Value{
+        type Output = Value;
+
+        fn sub(self, other: Self) -> Self::Output {
+            let addititive_inverse_other = Value::from(-1) * other;
+            self.add(addititive_inverse_other)           
+        }
+    }
+
+    impl Div for Value{
+        type Output = Value;
+
+        fn div(self, other:Self) -> Self::Output {
+            //We treat division as a special case of power rule with exponent = -1
+            let exponent = Exponent::from(-1);
+            let inverse_of_other = other.power(exponent);
+            //Then we simply use our multiplication
+            self.mul(inverse_of_other)
+        }
+    }
+    // Exp
+    impl Exp for Value{
+        type Output = Value;
+
+        fn exp(self) -> Self::Output{
+            let exped_value = self.reference.borrow().value.exp();
+            Value {
+                reference: Rc::new(
+                    RefCell::new(
+                        InnerValue{
+                            id : Value::get_initialization_id(),
+                            value :exped_value,
+                            gradient: 0.0,
+                            operation: Operation::Exp(self.clone())
+                        }
+                    )
+                )
+            }
+        }
+    }
+
+    impl Power for Value{
+        type Output = Value;
+
+        fn power(self, other: Exponent) -> Self::Output{
+            let exponentiated_value = f64::powf(self.reference.borrow().value, f64::from(other.value));
+            Value {
+                reference: Rc::new(
+                    RefCell::new(
+                        InnerValue{
+                            id : Value::get_initialization_id(),
+                            value :exponentiated_value,
+                            gradient: 0.0,
+                            operation: Operation::Power(self.clone(), other.clone())
+                        }
+                    )
+                )
+            }
+        }
+    }
+
+
+    
 }
