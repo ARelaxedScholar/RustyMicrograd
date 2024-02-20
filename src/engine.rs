@@ -1,6 +1,7 @@
 pub mod engine {
     use std::cell::RefCell;
     use std::rc::Rc;
+    use std::iter::Sum;
     use core::ops::{Add, Sub, Mul, Div};
     use std::collections::{VecDeque, HashSet};
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -166,6 +167,16 @@ pub mod engine {
         type Output;
 
         fn power(self, other: Exponent) -> Self::Output;
+    }
+
+    impl Sum for Value{
+        fn sum<I>(iter: I) -> Self
+        where
+            I: Iterator<Item = Self>,
+            {
+                iter.fold(Self::new(0.0), |acc,x| acc + x.clone())
+            }
+
     }
 
     impl From<f64> for Value{
