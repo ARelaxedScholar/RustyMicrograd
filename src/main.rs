@@ -1,21 +1,17 @@
- mod engine;
+mod engine;
 mod neural_network;
+
 
 fn main(){
     use crate::engine::engine::Value;
-    let val1 = Value::new(0.0); //0.0
-    let val2 = Value::new(3.0); //3.0
-    let val3 = Value::from(15); //15.0
+    use crate::neural_network::neural_network::MultiLayerPerceptron;
+    //A simple neural network
+    let a_simple_network = MultiLayerPerceptron::new(3, vec![4, 7, 5, 1]);
+    let sample_vector = vec![Value::from(3), Value::from(-9.5), Value::from(4.5)];
 
-    let val4 = val1.clone() + val2.clone(); //3.0
-    let val5 = val2.clone() * val3.clone(); //45.0
-
-    let val6 = Value::from(10) * val4.clone(); //30.0
-
-    let mut val7 = val5.clone() + val6.clone();
-
-    println!("{:?}", val7.clone());
-    println!();
-    val7.backwards();
-    println!("{:?}", val7);
+    for i in 0..10{
+        let some_value = a_simple_network.forward(sample_vector.clone()).unwrap();
+        println!("Value on try {}: {:?}", i, some_value);
+    }
+    
 }
