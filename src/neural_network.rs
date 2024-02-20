@@ -39,6 +39,10 @@ pub mod neural_network{
             }
 
         }
+
+        pub fn get_parameters(&self) -> Vec<Value>{
+            vec![self.bias.clone()].into_iter().chain(self.weights.clone().into_iter()).collect()
+        }
     }
 
     struct Layer{
@@ -63,7 +67,14 @@ pub mod neural_network{
                 .map(|neuron| neuron.forward(x.clone()).unwrap())
                 .collect())
             }
+        }
 
+        pub fn get_parameters(&self) -> Vec<Value>{
+            let mut parameters = Vec::new();
+            for neuron in &self.neurons{
+                parameters = parameters.into_iter().chain(neuron.get_parameters().into_iter()).collect();
+            }
+            parameters
         }
     }
 
@@ -95,9 +106,17 @@ pub mod neural_network{
                 for layer in self.layers.iter(){
                     next_layer_input = layer.forward(next_layer_input)?;
                 }
-                Ok(x)
+                Ok(next_layer_input)
             }
-            
+        }
+
+        pub fn get_parameters(&self) -> Vec<Value>{
+           let mut parameters = Vec::new();
+
+           for layer in &self.layers{
+                parameters = parameters.into_iter().chain(layer.get_parameters().into_iter()).collect();
+           } 
+           parameters
         }
     }
 
