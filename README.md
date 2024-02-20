@@ -37,3 +37,5 @@ Also, whoever said Rust would replace Python in data science lied, I cannot see 
 Despite it all, this was a truly fun project.
 
 Till we meet again.
+
+Possible next: Build a visualizer for the computation graph.
